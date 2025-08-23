@@ -329,7 +329,6 @@ router.post('/eticket', async (req, res) => {
     // Save to MongoDB
     await newEticket.save();
 
-
     const passengerCount = passengers.length;
     const vehicleCount = hasVehicle && Array.isArray(vehicleDetail)
       ? vehicleDetail.length
@@ -376,6 +375,8 @@ router.post('/eticket', async (req, res) => {
     res.status(500).json({ message: 'Failed to create eTicket' });
   }
 });
+
+
 
 
 router.post('/verify-otp', async (req, res) => {
