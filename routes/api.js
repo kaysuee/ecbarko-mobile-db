@@ -348,6 +348,26 @@ router.post('/eticket', async (req, res) => {
       }
     );
 
+
+
+     // Create a new book document
+     const activebook = new ActiveBooking({
+      user,
+      bookingReference,
+      departureLocation,
+      arrivalLocation,
+      departDate,
+      departTime,
+      arriveDate,
+      arriveTime,
+      passengerCount,
+      hasVehicle,
+      status: 'active',
+      shippingLine,
+    });
+
+    await activebook.save();
+    
     await sendPDFEmail({
       email,
       passengers,

@@ -11,8 +11,8 @@ const ActiveBookingSchema = new mongoose.Schema({
   hasVehicle : { type: Boolean, default: false },
   status: { type: String, default: 'inactive' },
   shippingLine: { type: String, required: true },
-  departurePort: { type: String, required: true },
-  arrivalPort: { type: String, required: true },
+  departurePort: { type: String },
+  arrivalPort: { type: String },
 }, {timestamps: true,
   collection: 'activebooking'  // Explicitly define collection name
 });
