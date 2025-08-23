@@ -306,7 +306,17 @@ router.post('/eticket', async (req, res) => {
       totalFare,
       schedcde
     } = req.body;
-    
+
+   let card = await Card.findOne({ userId: userId, status: 'active' });
+    if (!card) {
+      return res.status(404).json({ error: 'Active card not found' });
+    }else if (Number(card.balance) < Number(totalFare)) {
+      return res.status(402).json({ error: 'Insufficient funds' });
+    }
+
+    card.balance = (Number(card.balance) - Number(totalFare)).toFixed(2);
+    await card.save();
+
     // Create a new Eticket document
     const newEticket = new Eticket({
       user,
