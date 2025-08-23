@@ -352,13 +352,13 @@ router.post('/eticket', async (req, res) => {
 
      // Create a new book document
      const activebook = new ActiveBooking({
-      user,
-      bookingReference,
+      userId:user,
+      bookingId:bookingReference,
       departureLocation,
       arrivalLocation,
       departDate,
       departTime,
-      passengerCount,
+      passengers:passengerCount,
       hasVehicle,
       status: 'active',
       shippingLine
