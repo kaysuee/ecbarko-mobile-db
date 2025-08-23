@@ -358,16 +358,14 @@ router.post('/eticket', async (req, res) => {
       arrivalLocation,
       departDate,
       departTime,
-      arriveDate,
-      arriveTime,
       passengerCount,
       hasVehicle,
       status: 'active',
-      shippingLine,
+      shippingLine
     });
 
     await activebook.save();
-    
+
     await sendPDFEmail({
       email,
       passengers,
