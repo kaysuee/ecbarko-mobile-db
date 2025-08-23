@@ -307,7 +307,7 @@ router.post('/eticket', async (req, res) => {
       schedcde
     } = req.body;
 
-   let card = await Card.findOne({ userId: userId, status: 'active' });
+   let card = await Card.findOne({ userId: user, status: 'active' });
     if (!card) {
       return res.status(404).json({ error: 'Active card not found' });
     }else if (Number(card.balance) < Number(totalFare)) {
