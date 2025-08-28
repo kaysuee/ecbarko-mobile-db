@@ -7,6 +7,7 @@ const CardHistory = require('../models/cardHistory');
 const ActiveBooking = require('../models/activebooking.js');
 const Eticket = require('../models/eticket');
 const Notification = require('../models/notification');
+const Announcement = require('../models/announcement');
 const jwt = require('jsonwebtoken');
 const Schedule = require('../models/schedule');
 require('dotenv').config();
@@ -729,7 +730,7 @@ router.post('/notifications', async (req, res) => {
   }
 });
 
-// Get all notifications for a user
+// Get all notifications for a user (excluding archived)
 router.get('/notifications/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -739,12 +740,15 @@ router.get('/notifications/:userId', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Get notifications for the user, sorted by creation date (newest first)
-    const notifications = await Notification.find({ userId })
+    // Get notifications for the user (excluding archived), sorted by creation date (newest first)
+    const notifications = await Notification.find({ 
+      userId, 
+      isArchived: { $ne: true } 
+    })
       .sort({ createdAt: -1 })
       .limit(100); // Limit to prevent overwhelming response
 
-    console.log(`🔍 Fetched ${notifications.length} notifications for user ${userId}`);
+    console.log(`🔍 Fetched ${notifications.length} active notifications for user ${userId}`);
 
     res.status(200).json(notifications);
   } catch (err) {
@@ -787,6 +791,40 @@ router.put('/notifications/:notificationId/read', async (req, res) => {
   }
 });
 
+// Archive notification (mark as archived instead of deleting)
+router.put('/notifications/:notificationId/archive', async (req, res) => {
+  try {
+    const { notificationId } = req.params;
+    const { userId } = req.body;
+
+    // Validate required fields
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // Find and update the notification
+    const updatedNotification = await Notification.findOneAndUpdate(
+      { _id: notificationId, userId: userId },
+      { isArchived: true },
+      { new: true }
+    );
+
+    if (!updatedNotification) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+
+    console.log(`📦 Notification ${notificationId} archived for user ${userId}`);
+
+    res.status(200).json({
+      message: 'Notification archived successfully',
+      notification: updatedNotification
+    });
+  } catch (err) {
+    console.error('❌ Error archiving notification:', err);
+    res.status(500).json({ error: 'Failed to archive notification' });
+  }
+});
+
 // Delete a notification
 router.delete('/notifications/:notificationId', async (req, res) => {
   try {
@@ -820,6 +858,33 @@ router.delete('/notifications/:notificationId', async (req, res) => {
   }
 });
 
+// Get archived notifications for a user (notification history)
+router.get('/notifications/:userId/archived', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Validate user ID
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // Get archived notifications for the user, sorted by creation date (newest first)
+    const archivedNotifications = await Notification.find({ 
+      userId, 
+      isArchived: true 
+    })
+      .sort({ createdAt: -1 })
+      .limit(100); // Limit to prevent overwhelming response
+
+    console.log(`📦 Fetched ${archivedNotifications.length} archived notifications for user ${userId}`);
+
+    res.status(200).json(archivedNotifications);
+  } catch (err) {
+    console.error('❌ Error fetching archived notifications:', err);
+    res.status(500).json({ error: 'Failed to fetch archived notifications' });
+  }
+});
+
 // Get unread notification count for a user
 router.get('/notifications/:userId/unread-count', async (req, res) => {
   try {
@@ -830,10 +895,11 @@ router.get('/notifications/:userId/unread-count', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Count unread notifications
+    // Count unread notifications (excluding archived)
     const unreadCount = await Notification.countDocuments({
       userId: userId,
-      isRead: false
+      isRead: false,
+      isArchived: { $ne: true }
     });
 
     console.log(`🔍 User ${userId} has ${unreadCount} unread notifications`);
@@ -846,6 +912,208 @@ router.get('/notifications/:userId/unread-count', async (req, res) => {
 });
 
 // ===== END NOTIFICATION ROUTES =====
+
+// ===== ANNOUNCEMENT ROUTES =====
+
+// Create a new announcement
+router.post('/announcements', async (req, res) => {
+  try {
+    const {
+      title,
+      message,
+      type,
+      scheduleAffected,
+      status,
+      author,
+      targetUsers,
+      priority,
+      expiresAt
+    } = req.body;
+
+    // Validate required fields
+    if (!title || !message || !author) {
+      return res.status(400).json({ error: 'Title, message, and author are required' });
+    }
+
+    // Create new announcement
+    const announcement = new Announcement({
+      title,
+      message,
+      type: type || 'general',
+      scheduleAffected: scheduleAffected || '',
+      status: status || 'draft',
+      author,
+      targetUsers: targetUsers || [],
+      priority: priority || 'medium',
+      expiresAt: expiresAt ? new Date(expiresAt) : null
+    });
+
+    await announcement.save();
+
+    console.log(`📢 Announcement created: ${title} by ${author}`);
+
+    res.status(201).json({
+      message: 'Announcement created successfully',
+      announcement: announcement
+    });
+  } catch (err) {
+    console.error('❌ Error creating announcement:', err);
+    res.status(500).json({ error: 'Failed to create announcement' });
+  }
+});
+
+// Get all active announcements for a user
+router.get('/announcements/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { type, priority } = req.query;
+
+    // Validate user ID
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // Build query for active announcements
+    let query = {
+      status: 'sent',
+      isActive: true,
+      $or: [
+        { targetUsers: { $size: 0 } }, // Empty array means all users
+        { targetUsers: userId }
+      ]
+    };
+
+    // Add type filter if specified
+    if (type) {
+      query.type = type;
+    }
+
+    // Add priority filter if specified
+    if (priority) {
+      query.priority = priority;
+    }
+
+    // Get announcements that are currently active and not expired
+    const announcements = await Announcement.find(query)
+      .sort({ priority: -1, dateCreated: -1 })
+      .limit(50);
+
+    // Filter to only currently active announcements (not expired)
+    const activeAnnouncements = announcements.filter(announcement => {
+      if (announcement.isExpired) return false;
+      return true;
+    });
+
+    console.log(`📢 Fetched ${activeAnnouncements.length} active announcements for user ${userId}`);
+
+    res.status(200).json(activeAnnouncements);
+  } catch (err) {
+    console.error('❌ Error fetching announcements:', err);
+    res.status(500).json({ error: 'Failed to fetch announcements' });
+  }
+});
+
+// Mark announcement as read by user
+router.put('/announcements/:announcementId/read', async (req, res) => {
+  try {
+    const { announcementId } = req.params;
+    const { userId } = req.body;
+
+    // Validate required fields
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    // Find and update the announcement
+    const announcement = await Announcement.findById(announcementId);
+    
+    if (!announcement) {
+      return res.status(404).json({ error: 'Announcement not found' });
+    }
+
+    // Mark as read
+    await announcement.markAsRead(userId);
+
+    console.log(`✅ Announcement ${announcementId} marked as read by user ${userId}`);
+
+    res.status(200).json({
+      message: 'Announcement marked as read',
+      announcement: announcement
+    });
+  } catch (err) {
+    console.error('❌ Error marking announcement as read:', err);
+    res.status(500).json({ error: 'Failed to mark announcement as read' });
+  }
+});
+
+// Get announcement statistics (admin only)
+router.get('/announcements/stats/overview', async (req, res) => {
+  try {
+    const totalAnnouncements = await Announcement.countDocuments();
+    const activeAnnouncements = await Announcement.countDocuments({ 
+      status: 'sent', 
+      isActive: true 
+    });
+    const urgentAnnouncements = await Announcement.countDocuments({ 
+      status: 'sent', 
+      isActive: true, 
+      priority: 'critical' 
+    });
+
+    const stats = {
+      total: totalAnnouncements,
+      active: activeAnnouncements,
+      urgent: urgentAnnouncements,
+      lastUpdated: new Date()
+    };
+
+    console.log(`📊 Announcement stats: ${JSON.stringify(stats)}`);
+
+    res.status(200).json(stats);
+  } catch (err) {
+    console.error('❌ Error fetching announcement stats:', err);
+    res.status(500).json({ error: 'Failed to fetch announcement stats' });
+  }
+});
+
+// Update announcement status
+router.put('/announcements/:announcementId/status', async (req, res) => {
+  try {
+    const { announcementId } = req.params;
+    const { status, isActive } = req.body;
+
+    // Validate required fields
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required' });
+    }
+
+    // Find and update the announcement
+    const updatedAnnouncement = await Announcement.findByIdAndUpdate(
+      announcementId,
+      { 
+        status,
+        isActive: isActive !== undefined ? isActive : true
+      },
+      { new: true }
+    );
+
+    if (!updatedAnnouncement) {
+      return res.status(404).json({ error: 'Announcement not found' });
+    }
+
+    console.log(`📢 Announcement ${announcementId} status updated to ${status}`);
+
+    res.status(200).json({
+      message: 'Announcement status updated successfully',
+      announcement: updatedAnnouncement
+    });
+  } catch (err) {
+    console.error('❌ Error updating announcement status:', err);
+    res.status(500).json({ error: 'Failed to update announcement status' });
+  }
+});
+
+// ===== END ANNOUNCEMENT ROUTES =====
 
 
 module.exports = router;
