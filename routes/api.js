@@ -8,6 +8,7 @@ const ActiveBooking = require('../models/activebooking.js');
 const Eticket = require('../models/eticket');
 const Notification = require('../models/notification');
 const Announcement = require('../models/announcement');
+const About = require('../models/about');
 const jwt = require('jsonwebtoken');
 const Schedule = require('../models/schedule');
 require('dotenv').config();
@@ -1114,6 +1115,61 @@ router.put('/announcements/:announcementId/status', async (req, res) => {
 });
 
 // ===== END ANNOUNCEMENT ROUTES =====
+
+// ===== ABOUT TEXT ROUTES =====
+
+// Get about text
+router.get('/about', async (req, res) => {
+  try {
+    let aboutData = await About.getLatest();
+    
+    if (!aboutData) {
+      // Create default about text if none exists
+      aboutData = await About.upsertAbout(
+        "ECBARKO is a mobile application designed to enhance the convenience and efficiency of sea travel for passengers and ferry operators alike. With a user-friendly interface, the app allows travelers to browse updated ferry schedules, secure reservations, and receive instant notifications on trip changes or delays. ECBARKO also offers helpful travel tips, terminal information, and digital ticketing features to eliminate long queues and paperwork. By integrating modern technology into maritime travel, ECBARKO brings safety, transparency, and ease right to your fingertips—ensuring that every journey is smooth, timely, and stress-free.",
+        'System',
+        'Default about text created automatically'
+      );
+    }
+
+    console.log('📖 About text fetched successfully');
+    res.status(200).json(aboutData);
+  } catch (err) {
+    console.error('❌ Error fetching about text:', err);
+    res.status(500).json({ error: 'Failed to fetch about text' });
+  }
+});
+
+// Update about text (admin only)
+router.put('/about', async (req, res) => {
+  try {
+    const { aboutText, author, notes } = req.body;
+
+    // Validate required fields
+    if (!aboutText) {
+      return res.status(400).json({ error: 'About text is required' });
+    }
+
+    // Update or create about text
+    const updatedAbout = await About.upsertAbout(
+      aboutText,
+      author || 'Admin',
+      notes || ''
+    );
+
+    console.log('📖 About text updated successfully');
+
+    res.status(200).json({
+      message: 'About text updated successfully',
+      about: updatedAbout
+    });
+  } catch (err) {
+    console.error('❌ Error updating about text:', err);
+    res.status(500).json({ error: 'Failed to update about text' });
+  }
+});
+
+// ===== END ABOUT TEXT ROUTES =====
 
 
 module.exports = router;
