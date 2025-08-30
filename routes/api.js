@@ -917,7 +917,7 @@ router.get('/notifications/:userId/unread-count', async (req, res) => {
 // ===== ANNOUNCEMENT ROUTES =====
 
 // Create a new announcement
-router.post('/announcements', async (req, res) => {
+router.post('/announcement', async (req, res) => {
   try {
     const {
       title,
@@ -964,7 +964,7 @@ router.post('/announcements', async (req, res) => {
 });
 
 // Get all active announcements for a user
-router.get('/announcements/:userId', async (req, res) => {
+router.get('/announcement/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const { type, priority } = req.query;
@@ -974,13 +974,23 @@ router.get('/announcements/:userId', async (req, res) => {
       return res.status(400).json({ error: 'User ID is required' });
     }
 
-    // Build query for active announcements
+    // Build query for active announcements - more flexible to handle legacy data
     let query = {
       status: 'sent',
-      isActive: true,
-      $or: [
-        { targetUsers: { $size: 0 } }, // Empty array means all users
-        { targetUsers: userId }
+      $and: [
+        {
+          $or: [
+            { isActive: true },
+            { isActive: { $exists: false } } // Include announcements without isActive field
+          ]
+        },
+        {
+          $or: [
+            { targetUsers: { $size: 0 } }, // Empty array means all users
+            { targetUsers: userId },
+            { targetUsers: { $exists: false } } // Include announcements without targetUsers field
+          ]
+        }
       ]
     };
 
@@ -1015,7 +1025,7 @@ router.get('/announcements/:userId', async (req, res) => {
 });
 
 // Mark announcement as read by user
-router.put('/announcements/:announcementId/read', async (req, res) => {
+router.put('/announcement/:announcementId/read', async (req, res) => {
   try {
     const { announcementId } = req.params;
     const { userId } = req.body;
@@ -1047,8 +1057,110 @@ router.put('/announcements/:announcementId/read', async (req, res) => {
   }
 });
 
+
+
+// Test endpoint to see what's in the database
+router.get('/announcement/test/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    console.log(`🧪 TEST: Checking announcements for user: ${userId}`);
+    
+    // Get all announcements first
+    const allAnnouncements = await Announcement.find({}).sort({ dateCreated: -1 });
+    console.log(`🧪 TEST: Total announcements in DB: ${allAnnouncements.length}`);
+    
+    // Check each announcement
+    allAnnouncements.forEach((ann, index) => {
+      console.log(`🧪 TEST ${index + 1}: "${ann.title}" - Status: ${ann.status}, Active: ${ann.isActive}, TargetUsers: ${JSON.stringify(ann.targetUsers)}`);
+    });
+    
+    // Test the query we're using
+    const testQuery = {
+      $or: [
+        { targetUsers: { $size: 0 } },
+        { targetUsers: userId }
+      ]
+    };
+    
+    console.log(`🧪 TEST: Query being used: ${JSON.stringify(testQuery)}`);
+    
+    const testResults = await Announcement.find(testQuery);
+    console.log(`🧪 TEST: Query results: ${testResults.length} announcements`);
+    
+    res.status(200).json({
+      totalInDB: allAnnouncements.length,
+      queryResults: testResults.length,
+      sampleAnnouncement: allAnnouncements.length > 0 ? allAnnouncements[0] : null,
+      query: testQuery
+    });
+    
+  } catch (err) {
+    console.error('❌ TEST Error:', err);
+    res.status(500).json({ error: 'Test failed', details: err.message });
+  }
+});
+
+// Get all announcements including past ones for a specific user
+router.get('/announcement/all/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { type, priority, includeExpired } = req.query;
+
+    console.log(`📢 Fetching all announcements for user: ${userId}`);
+    console.log(`🔍 Query params: type=${type}, priority=${priority}, includeExpired=${includeExpired}`);
+
+    // Build query for all announcements
+    let query = {
+      $or: [
+        { targetUsers: { $size: 0 } }, // Empty array means all users
+        { targetUsers: userId }
+      ]
+    };
+
+    // Filter by type if specified
+    if (type && type !== 'All') {
+      query.type = type.toLowerCase();
+    }
+
+    // Filter by priority if specified
+    if (priority && priority !== 'All') {
+      query.priority = priority.toLowerCase();
+    }
+
+    // If includeExpired is false, only show active announcements
+    if (includeExpired === 'false') {
+      query.isActive = true;
+      // Also filter out expired announcements
+      query.$or = [
+        { expiresAt: { $exists: false } },
+        { expiresAt: { $gt: new Date() } }
+      ];
+    }
+
+    // Find announcements
+    console.log(`🔍 Final query: ${JSON.stringify(query)}`);
+    
+    const announcements = await Announcement.find(query)
+      .sort({ dateCreated: -1 })
+      .populate('author', 'name')
+      .lean();
+
+    console.log(`📢 Fetched ${announcements.length} announcements for user ${userId}`);
+    
+    // Log first few announcements for debugging
+    if (announcements.length > 0) {
+      console.log(`📋 Sample announcement: ${JSON.stringify(announcements[0], null, 2)}`);
+    }
+
+    res.status(200).json(announcements);
+  } catch (err) {
+    console.error('❌ Error fetching all announcements:', err);
+    res.status(500).json({ error: 'Failed to fetch all announcements' });
+  }
+});
+
 // Get announcement statistics (admin only)
-router.get('/announcements/stats/overview', async (req, res) => {
+router.get('/announcement/stats/overview', async (req, res) => {
   try {
     const totalAnnouncements = await Announcement.countDocuments();
     const activeAnnouncements = await Announcement.countDocuments({ 
@@ -1078,7 +1190,7 @@ router.get('/announcements/stats/overview', async (req, res) => {
 });
 
 // Update announcement status
-router.put('/announcements/:announcementId/status', async (req, res) => {
+router.put('/announcement/:announcementId/status', async (req, res) => {
   try {
     const { announcementId } = req.params;
     const { status, isActive } = req.body;
@@ -1170,6 +1282,24 @@ router.put('/about', async (req, res) => {
 });
 
 // ===== END ABOUT TEXT ROUTES =====
+
+// Get all announcements (for testing) - MOVED TO END to avoid route conflicts
+router.get('/announcements', async (req, res) => {
+  try {
+    const allAnnouncements = await Announcement.find({}).sort({ dateCreated: -1 });
+    console.log(`📢 Found ${allAnnouncements.length} total announcements in database`);
+    
+    // Log some details about the announcements
+    if (allAnnouncements.length > 0) {
+      console.log(`📋 First announcement: ${allAnnouncements[0].title} - Status: ${allAnnouncements[0].status} - Active: ${allAnnouncements[0].isActive} - TargetUsers: ${JSON.stringify(allAnnouncements[0].targetUsers)}`);
+    }
+    
+    res.status(200).json(allAnnouncements);
+  } catch (err) {
+    console.error('❌ Error fetching all announcements:', err);
+    res.status(500).json({ error: 'Failed to fetch all announcements' });
+  }
+});
 
 
 module.exports = router;

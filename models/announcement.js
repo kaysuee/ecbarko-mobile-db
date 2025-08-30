@@ -41,6 +41,12 @@ const announcementSchema = new mongoose.Schema({
     type: [String], // Array of user IDs
     default: [] // Empty array means all users
   },
+
+  // Legacy field support - map sentTo to targetUsers
+  sentTo: {
+    type: Number,
+    default: 0
+  },
   priority: {
     type: String,
     enum: ['low', 'medium', 'high', 'critical'],
@@ -85,5 +91,30 @@ announcementSchema.methods.markAsRead = async function(userId) {
 announcementSchema.methods.isReadBy = function(userId) {
   return this.readBy && this.readBy.includes(userId);
 };
+
+// Pre-save middleware to ensure required fields exist
+announcementSchema.pre('save', function(next) {
+  // Set default priority if missing
+  if (!this.priority) {
+    this.priority = 'medium';
+  }
+  
+  // Set default isActive if missing
+  if (this.isActive === undefined) {
+    this.isActive = true;
+  }
+  
+  // Set default expiresAt if missing (30 days from now)
+  if (!this.expiresAt) {
+    this.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  }
+  
+  // Ensure targetUsers is an array
+  if (!this.targetUsers || !Array.isArray(this.targetUsers)) {
+    this.targetUsers = [];
+  }
+  
+  next();
+});
 
 module.exports = mongoose.model('Announcement', announcementSchema);
