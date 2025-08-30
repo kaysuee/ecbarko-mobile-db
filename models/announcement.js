@@ -117,4 +117,4 @@ announcementSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('Announcement', announcementSchema);
+module.exports = mongoose.model('Announcement', announcementSchema, 'announcement');
