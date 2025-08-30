@@ -990,6 +990,13 @@ router.get('/announcement/:userId', async (req, res) => {
             { targetUsers: userId },
             { targetUsers: { $exists: false } } // Include announcements without targetUsers field
           ]
+        },
+        // Check if announcement is not expired
+        {
+          $or: [
+            { expiresAt: { $gt: new Date() } }, // Not expired
+            { expiresAt: { $exists: false } }   // No expiration date
+          ]
         }
       ]
     };
@@ -1009,15 +1016,9 @@ router.get('/announcement/:userId', async (req, res) => {
       .sort({ priority: -1, dateCreated: -1 })
       .limit(50);
 
-    // Filter to only currently active announcements (not expired)
-    const activeAnnouncements = announcements.filter(announcement => {
-      if (announcement.isExpired) return false;
-      return true;
-    });
+    console.log(`📢 Fetched ${announcements.length} active announcements for user ${userId}`);
 
-    console.log(`📢 Fetched ${activeAnnouncements.length} active announcements for user ${userId}`);
-
-    res.status(200).json(activeAnnouncements);
+    res.status(200).json(announcements);
   } catch (err) {
     console.error('❌ Error fetching announcements:', err);
     res.status(500).json({ error: 'Failed to fetch announcements' });
