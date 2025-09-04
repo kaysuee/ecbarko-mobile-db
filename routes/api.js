@@ -11,9 +11,8 @@ const Announcement = require('../models/announcement');
 const About = require('../models/about');
 const jwt = require('jsonwebtoken');
 const Schedule = require('../models/schedule');
-const crypto = require('crypto');
 require('dotenv').config();
-const { sendOtpEmail, sendPDFEmail, sendResetEmail } = require('../utils/email');
+const { sendOtpEmail, sendPDFEmail } = require('../utils/email');
 
 
 
@@ -168,7 +167,12 @@ router.get('/actbooking/:userId', async (req, res) => {
         transactionId: bookingObj.bookingId || 'N/A', // Use bookingId as transactionId
         // Ensure all required fields are properly formatted
         passengerDetails: bookingObj.passengerDetails || [],
-        vehicleInfo: bookingObj.vehicleInfo || null,
+        vehicleInfo: bookingObj.vehicleInfo ? {
+          vehicleType: bookingObj.vehicleInfo.vehicleType || '',
+          plateNumber: bookingObj.vehicleInfo.plateNumber || '',
+          owner: bookingObj.vehicleInfo.vehicleOwner || '', // Map vehicleOwner to owner
+          fare: 0, // Default fare since it's not stored in database
+        } : null,
         isRoundTrip: bookingObj.isRoundTrip || false,
         arriveDate: bookingObj.arriveDate || '',
         arriveTime: bookingObj.arriveTime || '',
