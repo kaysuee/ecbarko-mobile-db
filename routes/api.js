@@ -11,8 +11,9 @@ const Announcement = require('../models/announcement');
 const About = require('../models/about');
 const jwt = require('jsonwebtoken');
 const Schedule = require('../models/schedule');
+const crypto = require('crypto');
 require('dotenv').config();
-const { sendOtpEmail, sendPDFEmail } = require('../utils/email');
+const { sendOtpEmail, sendPDFEmail, sendResetEmail } = require('../utils/email');
 
 
 
