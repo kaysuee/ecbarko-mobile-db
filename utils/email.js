@@ -477,8 +477,100 @@ const sendPDFEmail = async ({
       const mailOptions = {
         from: `"${EMAIL_CONFIG.companyInfo.name}" <${process.env.EMAIL_USER}>`,
         to: email,
-        subject: `Your E-Ticket (${bookingReference})`,
-        text: 'Please find your e-ticket attached.',
+        subject: `🚢 Your E-Ticket is Ready! (${bookingReference})`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8f9fa;">
+            <div style="background-color: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+              
+              <!-- Header -->
+              <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #1e3a8a; margin: 0; font-size: 28px; font-weight: bold;">🚢 ECBARKO</h1>
+                <p style="color: #6b7280; margin: 10px 0 0 0; font-size: 16px;">Your Ferry Booking Confirmation</p>
+              </div>
+
+              <!-- Success Message -->
+              <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 20px; margin-bottom: 25px; border-radius: 5px;">
+                <h2 style="color: #065f46; margin: 0 0 10px 0; font-size: 20px;">✅ Booking Confirmed!</h2>
+                <p style="color: #065f46; margin: 0; font-size: 16px; line-height: 1.5;">
+                  Thank you for choosing ECBARKO! Your ferry booking has been successfully confirmed. 
+                  Your e-ticket is attached to this email.
+                </p>
+              </div>
+
+              <!-- Booking Details -->
+              <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                <h3 style="color: #374151; margin: 0 0 15px 0; font-size: 18px;">📋 Booking Details</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                  <div>
+                    <p style="margin: 8px 0; color: #6b7280;"><strong>Booking Reference:</strong></p>
+                    <p style="margin: 8px 0; color: #1f2937; font-weight: bold; font-size: 16px;">${bookingReference}</p>
+                  </div>
+                  <div>
+                    <p style="margin: 8px 0; color: #6b7280;"><strong>Route:</strong></p>
+                    <p style="margin: 8px 0; color: #1f2937; font-weight: bold; font-size: 16px;">${departureLocation} ➝ ${arrivalLocation}</p>
+                  </div>
+                  <div>
+                    <p style="margin: 8px 0; color: #6b7280;"><strong>Departure:</strong></p>
+                    <p style="margin: 8px 0; color: #1f2937; font-weight: bold; font-size: 16px;">${departDate} at ${departTime}</p>
+                  </div>
+                  <div>
+                    <p style="margin: 8px 0; color: #6b7280;"><strong>Arrival:</strong></p>
+                    <p style="margin: 8px 0; color: #1f2937; font-weight: bold; font-size: 16px;">${arriveDate} at ${arriveTime}</p>
+                  </div>
+                  <div>
+                    <p style="margin: 8px 0; color: #6b7280;"><strong>Shipping Line:</strong></p>
+                    <p style="margin: 8px 0; color: #1f2937; font-weight: bold; font-size: 16px;">${shippingLine}</p>
+                  </div>
+                  <div>
+                    <p style="margin: 8px 0; color: #6b7280;"><strong>Total Fare:</strong></p>
+                    <p style="margin: 8px 0; color: #1f2937; font-weight: bold; font-size: 16px;">₱${totalFare}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Important Information -->
+              <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; border-radius: 5px; margin-bottom: 25px;">
+                <h3 style="color: #92400e; margin: 0 0 15px 0; font-size: 18px;">⚠️ Important Information</h3>
+                <ul style="color: #92400e; margin: 0; padding-left: 20px; line-height: 1.6;">
+                  <li>Please arrive at the port at least 1 hour before departure</li>
+                  <li>Bring a valid government-issued ID for verification</li>
+                  <li>Present your e-ticket (printed or digital) at check-in</li>
+                  <li>Keep your booking reference number handy</li>
+                  <li>Check weather conditions before travel</li>
+                </ul>
+              </div>
+
+              <!-- Contact Information -->
+              <div style="background-color: #eff6ff; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                <h3 style="color: #1e40af; margin: 0 0 15px 0; font-size: 18px;">📞 Need Help?</h3>
+                <p style="color: #1e40af; margin: 0 0 10px 0; font-size: 16px;">
+                  If you have any questions or need assistance, please contact us:
+                </p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                  <div>
+                    <p style="margin: 5px 0; color: #1e40af;"><strong>📧 Email:</strong></p>
+                    <p style="margin: 5px 0; color: #1e40af;">support@ecbarko.com</p>
+                  </div>
+                  <div>
+                    <p style="margin: 5px 0; color: #1e40af;"><strong>🌐 Website:</strong></p>
+                    <p style="margin: 5px 0; color: #1e40af;">https://ecbarko.com</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Footer -->
+              <div style="text-align: center; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                <p style="color: #6b7280; margin: 0; font-size: 14px;">
+                  Thank you for choosing ECBARKO for your journey! 🚢
+                </p>
+                <p style="color: #9ca3af; margin: 5px 0 0 0; font-size: 12px;">
+                  This is an automated email. Please do not reply to this message.
+                </p>
+              </div>
+
+            </div>
+          </div>
+        `,
         attachments: [{
           filename: `E-Ticket-${bookingReference}.pdf`,
           content: pdfData,

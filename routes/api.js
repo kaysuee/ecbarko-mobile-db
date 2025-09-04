@@ -147,7 +147,10 @@ router.get('/actbooking/:userId', async (req, res) => {
   try {
     const activeBooking = await ActiveBooking.find({ userId: req.params.userId }).sort({ dateTransaction: -1 });
 
-    if (!activeBooking) return res.status(404).json({ error: 'Active Booking Not Found' });
+    // Return empty array if no bookings found instead of 404
+    if (!activeBooking || activeBooking.length === 0) {
+      return res.status(200).json([]);
+    }
 
     const formattedBooking = activeBooking.map(booking => {
       const dateTransaction = booking.departDate instanceof Date ? booking.departDate.toISOString() : null;
@@ -179,13 +182,17 @@ router.get('/actbooking/:userId', async (req, res) => {
   }
 });
 
-// GET Active Booking
+// GET Schedules
 router.get('/schedule', async (req, res) => {
   try {
     const schedules = await Schedule.find();
-    if (!schedules) return res.status(404).json({ error: 'Active Booking Not Found' })
+    
+    // Return empty array if no schedules found instead of 404
+    if (!schedules || schedules.length === 0) {
+      return res.status(200).json([]);
+    }
 
-  res.status(200).json(schedules);
+    res.status(200).json(schedules);
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
