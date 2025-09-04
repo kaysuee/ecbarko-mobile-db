@@ -155,6 +155,9 @@ router.get('/actbooking/:userId', async (req, res) => {
     const formattedBooking = activeBooking.map(booking => {
       const dateTransaction = booking.departDate instanceof Date ? booking.departDate.toISOString() : null;
 
+      // Debug: Log raw passenger details from database
+      console.log('DEBUG: Raw passengerDetails from DB:', JSON.stringify(booking.passengerDetails, null, 2));
+
       // Map the fields to match the frontend expectations
       const bookingObj = booking.toObject();
       return {
@@ -449,8 +452,19 @@ router.post('/eticket', async (req, res) => {
 
 
 
-     // Create a new book document
-     const activebook = new ActiveBooking({
+           // Debug: Log passenger data being saved
+      console.log('DEBUG: Passengers data being saved:', JSON.stringify(passengers, null, 2));
+      
+      // Map passenger data to match database schema
+      const mappedPassengers = passengers.map(passenger => ({
+        name: passenger.name || '',
+        contact: passenger.contactNumber || passenger.contact || '', // Map contactNumber to contact
+      }));
+      
+      console.log('DEBUG: Mapped passengers data:', JSON.stringify(mappedPassengers, null, 2));
+      
+      // Create a new book document
+      const activebook = new ActiveBooking({
       userId: user,
       bookingId: bookingReference,
       departureLocation,
@@ -474,7 +488,7 @@ router.post('/eticket', async (req, res) => {
         day: 'numeric' 
       }),
       isRoundTrip: false, // Default to one-way trip
-      passengerDetails: passengers, // Add passenger details
+      passengerDetails: mappedPassengers, // Use mapped passenger details
       vehicleInfo: hasVehicle && vehicleDetail.length > 0 ? {
         vehicleType: vehicleDetail[0]['carType'] || '',
         plateNumber: vehicleDetail[0]['plateNumber'] || '',
