@@ -166,7 +166,12 @@ router.get('/actbooking/:userId', async (req, res) => {
         paymentMethod: 'EcBarko Card', // Default method
         transactionId: bookingObj.bookingId || 'N/A', // Use bookingId as transactionId
         // Ensure all required fields are properly formatted
-        passengerDetails: bookingObj.passengerDetails || [],
+        passengerDetails: (bookingObj.passengerDetails || []).map(passenger => ({
+          name: passenger.name || '',
+          contactNumber: passenger.contact || '', // Map contact to contactNumber
+          ticketType: 'adult', // Default ticket type
+          fare: 0, // Default fare since it's not stored in database
+        })),
         vehicleInfo: bookingObj.vehicleInfo ? {
           vehicleType: bookingObj.vehicleInfo.vehicleType || '',
           plateNumber: bookingObj.vehicleInfo.plateNumber || '',
