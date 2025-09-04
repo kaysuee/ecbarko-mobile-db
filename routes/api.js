@@ -160,6 +160,17 @@ router.get('/actbooking/:userId', async (req, res) => {
 
       // Map the fields to match the frontend expectations
       const bookingObj = booking.toObject();
+      
+      // Map passenger details
+      const mappedPassengerDetails = (bookingObj.passengerDetails || []).map(passenger => ({
+        name: passenger.name || '',
+        contactNumber: passenger.contact || '', // Map contact to contactNumber
+        ticketType: 'adult', // Default ticket type
+        fare: 0, // Default fare since it's not stored in database
+      }));
+      
+      console.log('DEBUG: Mapped passengerDetails:', JSON.stringify(mappedPassengerDetails, null, 2));
+      
       return {
         ...bookingObj,
         dateTransaction, // Ensure we are only formatting a valid Date
@@ -169,12 +180,7 @@ router.get('/actbooking/:userId', async (req, res) => {
         paymentMethod: 'EcBarko Card', // Default method
         transactionId: bookingObj.bookingId || 'N/A', // Use bookingId as transactionId
         // Ensure all required fields are properly formatted
-        passengerDetails: (bookingObj.passengerDetails || []).map(passenger => ({
-          name: passenger.name || '',
-          contactNumber: passenger.contact || '', // Map contact to contactNumber
-          ticketType: 'adult', // Default ticket type
-          fare: 0, // Default fare since it's not stored in database
-        })),
+        passengerDetails: mappedPassengerDetails,
         vehicleInfo: bookingObj.vehicleInfo ? {
           vehicleType: bookingObj.vehicleInfo.vehicleType || '',
           plateNumber: bookingObj.vehicleInfo.plateNumber || '',
