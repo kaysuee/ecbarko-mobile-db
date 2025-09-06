@@ -708,11 +708,15 @@ const sendPDFEmail = async ({
     
     doc.fontSize(11)
        .font('Helvetica')
-       .text('Terminal Fee:', 30, yPosition);
+       .text('Total Passenger Fare:', 30, yPosition);
+    doc.text(`₱${(470.00 * passengers.length).toFixed(2)}`, 500, yPosition, { align: 'right' });
+    yPosition += 15;
+    
+    doc.text('Terminal Fee:', 30, yPosition);
     doc.text(`₱${(30.00 * passengers.length).toFixed(2)}`, 500, yPosition, { align: 'right' });
     yPosition += 15;
     
-    doc.text('Vehicle Fee:', 30, yPosition);
+    doc.text('Total Vehicle Fare:', 30, yPosition);
     const vehicleFare = hasVehicle ? 2704.00 : 0.00; // Use correct vehicle fare
     doc.text(`₱${vehicleFare.toFixed(2)}`, 500, yPosition, { align: 'right' });
     yPosition += 20;
