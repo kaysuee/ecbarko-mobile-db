@@ -741,7 +741,8 @@ const sendPDFEmail = async ({
        .text('• Be in the terminal 4 hours prior to departure.', 40, yPosition + 25);
     doc.text('• All passengers must present a valid identification at the terminal together with this eTicket Itinerary Receipt.', 40, yPosition + 37);
     doc.text('• Tickets cannot be changed for refunded and/or revalidated tickets after vessel departure.', 40, yPosition + 49);
-    yPosition += 80;
+    doc.text('• Vessel departure time may close 30 minutes before vessel departure, the passenger may not be accepted at s/he arrives beyond the cut-off time.', 40, yPosition + 61);
+    yPosition += 95;
 
     // Terms and Conditions
     doc.fontSize(12)
@@ -775,12 +776,14 @@ const sendPDFEmail = async ({
     doc.text('Please retain this document for your records and present it at the terminal for boarding.', 30, yPosition);
     yPosition += 12;
     doc.text('For inquiries, contact EcBarko customer service at +63 2 528 7000 or visit our office at Port Operations Building, Barangay Talao-Talao, Port Area, Lucena City, Quezon Province.', 30, yPosition);
-    yPosition += 30;
+    yPosition += 20;
     
+    // Thank you message
     doc.fontSize(11)
        .font('Helvetica-Bold')
        .fillColor('#1e40af')
        .text('Thank you for choosing EcBarko. Safe travels!', 30, yPosition, { align: 'center' });
+    yPosition += 30;
 
     // Vehicle details section (if needed)
     if (hasVehicle && Array.isArray(vehicleDetail)) {
