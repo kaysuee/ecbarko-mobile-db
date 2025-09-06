@@ -686,7 +686,7 @@ const sendPDFEmail = async ({
          .fillColor('black')
          .text(passenger.name || 'N/A', 40, yPosition + 6);
       doc.text('Adult', 350, yPosition + 6);
-      doc.text(`₱${(totalFare / passengers.length).toFixed(2)}`, 450, yPosition + 6);
+      doc.text(`₱470.00`, 450, yPosition + 6);
       
       yPosition += 25;
     });
@@ -697,7 +697,7 @@ const sendPDFEmail = async ({
        .font('Helvetica-Bold')
        .fillColor('black')
        .text('TOTAL PASSENGER FARE:', 40, yPosition + 6);
-    doc.text(`₱${totalFare.toFixed(2)}`, 450, yPosition + 6);
+    doc.text(`₱${(470.00 * passengers.length).toFixed(2)}`, 450, yPosition + 6);
     yPosition += 40;
 
     // Summary of Charges
@@ -709,11 +709,12 @@ const sendPDFEmail = async ({
     doc.fontSize(11)
        .font('Helvetica')
        .text('Terminal Fee:', 30, yPosition);
-    doc.text('₱30.00', 500, yPosition, { align: 'right' });
+    doc.text(`₱${(30.00 * passengers.length).toFixed(2)}`, 500, yPosition, { align: 'right' });
     yPosition += 15;
     
     doc.text('Vehicle Fee:', 30, yPosition);
-    doc.text(hasVehicle ? '₱625.73' : '₱0.00', 500, yPosition, { align: 'right' });
+    const vehicleFare = hasVehicle ? 2704.00 : 0.00; // Use correct vehicle fare
+    doc.text(`₱${vehicleFare.toFixed(2)}`, 500, yPosition, { align: 'right' });
     yPosition += 20;
     
     // Divider line
@@ -723,7 +724,8 @@ const sendPDFEmail = async ({
     doc.fontSize(12)
        .font('Helvetica-Bold')
        .text('TOTAL AMOUNT DUE:', 30, yPosition);
-    doc.text(`₱${(totalFare + 30.00 + (hasVehicle ? 625.73 : 0.00)).toFixed(2)}`, 500, yPosition, { align: 'right' });
+    const totalAmount = (470.00 * passengers.length) + (30.00 * passengers.length) + vehicleFare;
+    doc.text(`₱${totalAmount.toFixed(2)}`, 500, yPosition, { align: 'right' });
     yPosition += 40;
 
     // Reminders Box
@@ -815,7 +817,7 @@ const sendPDFEmail = async ({
        .font('Helvetica-Bold')
        .text('Total Fare:', 60, yPosition + 15);
     doc.fontSize(20)
-       .text(`₱${totalFare}`, 200, yPosition + 12);
+       .text(`₱${totalAmount.toFixed(2)}`, 200, yPosition + 12);
 
     // Footer
     yPosition += 60;
