@@ -13,6 +13,7 @@ const jwt = require('jsonwebtoken');
 const Schedule = require('../models/schedule');
 require('dotenv').config();
 const { sendOtpEmail, sendPDFEmail } = require('../utils/email');
+const mongoose = require('mongoose');
 
 
 
@@ -153,7 +154,7 @@ router.get('/actbooking/:userId', async (req, res) => {
     }
 
     const formattedBooking = activeBooking.map(booking => {
-      const dateTransaction = booking.departDate instanceof Date ? booking.departDate.toISOString() : null;
+      const dateTransaction = booking.departDate instanceof Date ? booking.departDate.toISOString() : booking.departDate;
 
       // Debug: Log raw passenger details from database
       console.log('DEBUG: Raw passengerDetails from DB:', JSON.stringify(booking.passengerDetails, null, 2));
@@ -1320,6 +1321,213 @@ router.put('/about', async (req, res) => {
 });
 
 // ===== END ABOUT TEXT ROUTES =====
+
+// ===== VEHICLE & FARE DATA ROUTES =====
+
+// Get all vehicle fares
+router.get('/vehicles-fares', async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const vehiclesFaresDoc = await db.collection('vehicles_fares').findOne({});
+    
+    if (!vehiclesFaresDoc || !vehiclesFaresDoc.vehicles_fares) {
+      return res.status(404).json({ error: 'Vehicle fares not found' });
+    }
+    
+    console.log(`🚗 Fetched ${vehiclesFaresDoc.vehicles_fares.length} vehicle fares`);
+    res.status(200).json(vehiclesFaresDoc.vehicles_fares);
+  } catch (err) {
+    console.error('❌ Error fetching vehicle fares:', err);
+    res.status(500).json({ error: 'Failed to fetch vehicle fares' });
+  }
+});
+
+// Get all vehicle brands
+router.get('/vehicle-brands', async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const brandsDoc = await db.collection('vehicles_fares').findOne({});
+    
+    if (!brandsDoc || !brandsDoc.brands) {
+      return res.status(404).json({ error: 'Vehicle brands not found' });
+    }
+    
+    console.log(`🏭 Fetched ${brandsDoc.brands.length} vehicle brands`);
+    res.status(200).json(brandsDoc.brands);
+  } catch (err) {
+    console.error('❌ Error fetching vehicle brands:', err);
+    res.status(500).json({ error: 'Failed to fetch vehicle brands' });
+  }
+});
+
+// Get vehicle models by brand
+router.get('/vehicle-models/:brandName', async (req, res) => {
+  try {
+    const { brandName } = req.params;
+    const db = mongoose.connection.db;
+    const modelsDoc = await db.collection('vehicles_fares').findOne({});
+    
+    if (!modelsDoc || !modelsDoc.models) {
+      return res.status(404).json({ error: 'Vehicle models not found' });
+    }
+    
+    const models = modelsDoc.models.filter(model => model.brandName === brandName);
+    
+    console.log(`🚙 Fetched ${models.length} models for brand: ${brandName}`);
+    res.status(200).json(models);
+  } catch (err) {
+    console.error('❌ Error fetching vehicle models:', err);
+    res.status(500).json({ error: 'Failed to fetch vehicle models' });
+  }
+});
+
+// Get vehicle model by name
+router.get('/vehicle-model/:modelName', async (req, res) => {
+  try {
+    const { modelName } = req.params;
+    const db = mongoose.connection.db;
+    const modelsDoc = await db.collection('vehicles_fares').findOne({});
+    
+    if (!modelsDoc || !modelsDoc.models) {
+      return res.status(404).json({ error: 'Vehicle models not found' });
+    }
+    
+    const model = modelsDoc.models.find(model => model.name === modelName);
+    
+    if (!model) {
+      return res.status(404).json({ error: 'Vehicle model not found' });
+    }
+    
+    console.log(`🚙 Fetched vehicle model: ${modelName}`);
+    res.status(200).json(model);
+  } catch (err) {
+    console.error('❌ Error fetching vehicle model:', err);
+    res.status(500).json({ error: 'Failed to fetch vehicle model' });
+  }
+});
+
+// Get all passenger fares
+router.get('/passenger-fares', async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const fares = await db.collection('passenger_fares').find({}).toArray();
+    
+    console.log(`🎫 Fetched ${fares.length} passenger fares`);
+    res.status(200).json(fares);
+  } catch (err) {
+    console.error('❌ Error fetching passenger fares:', err);
+    res.status(500).json({ error: 'Failed to fetch passenger fares' });
+  }
+});
+
+// Get terminal fees
+router.get('/terminal-fees', async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const passengerFaresDoc = await db.collection('passenger_fares').findOne({});
+    
+    if (!passengerFaresDoc || !passengerFaresDoc.terminalFees) {
+      return res.status(404).json({ error: 'Terminal fees not found' });
+    }
+    
+    console.log(`🏢 Fetched ${passengerFaresDoc.terminalFees.length} terminal fees`);
+    res.status(200).json(passengerFaresDoc.terminalFees);
+  } catch (err) {
+    console.error('❌ Error fetching terminal fees:', err);
+    res.status(500).json({ error: 'Failed to fetch terminal fees' });
+  }
+});
+
+// Get fare categories
+router.get('/fare-categories', async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const categories = await db.collection('fare_categories').find({}).toArray();
+    
+    console.log(`📋 Fetched ${categories.length} fare categories`);
+    res.status(200).json(categories);
+  } catch (err) {
+    console.error('❌ Error fetching fare categories:', err);
+    res.status(500).json({ error: 'Failed to fetch fare categories' });
+  }
+});
+
+// Calculate fare based on passenger type and vehicle info
+router.post('/calculate-fare', async (req, res) => {
+  try {
+    const { passengerType, vehicleType, laneMeter } = req.body;
+    const db = mongoose.connection.db;
+    
+    let totalFare = 0;
+    let breakdown = {};
+    
+    // Get passenger fare
+    const passengerFare = await db.collection('passenger_fares').findOne({ category: passengerType });
+    if (passengerFare) {
+      totalFare += passengerFare.price;
+      breakdown.passengerFare = passengerFare.price;
+    }
+    
+    // Get terminal fee
+    const terminalFee = await db.collection('terminal_fees').findOne({ category: passengerType });
+    if (terminalFee) {
+      totalFare += terminalFee.price;
+      breakdown.terminalFee = terminalFee.price;
+    }
+    
+    // Get vehicle fare if vehicle info provided
+    if (vehicleType && laneMeter) {
+      const vehicleFare = await db.collection('vehicles_fares').findOne({ name: vehicleType });
+      if (vehicleFare) {
+        totalFare += vehicleFare.price;
+        breakdown.vehicleFare = vehicleFare.price;
+      }
+    }
+    
+    console.log(`💰 Calculated fare: ₱${totalFare} for ${passengerType}${vehicleType ? ` + ${vehicleType}` : ''}`);
+    
+    res.status(200).json({
+      totalFare,
+      breakdown,
+      passengerType,
+      vehicleType: vehicleType || null,
+      laneMeter: laneMeter || null
+    });
+  } catch (err) {
+    console.error('❌ Error calculating fare:', err);
+    res.status(500).json({ error: 'Failed to calculate fare' });
+  }
+});
+
+// Search vehicles by type or brand
+router.get('/search-vehicles', async (req, res) => {
+  try {
+    const { type, brand, category } = req.query;
+    const db = mongoose.connection.db;
+    
+    let query = {};
+    
+    if (type) {
+      query.name = { $regex: type, $options: 'i' };
+    }
+    if (brand) {
+      query.brandName = { $regex: brand, $options: 'i' };
+    }
+    if (category) {
+      query.category = category;
+    }
+    
+    const vehicles = await db.collection('models').find(query).toArray();
+    
+    console.log(`🔍 Found ${vehicles.length} vehicles matching search criteria`);
+    res.status(200).json(vehicles);
+  } catch (err) {
+    console.error('❌ Error searching vehicles:', err);
+    res.status(500).json({ error: 'Failed to search vehicles' });
+  }
+});
+
+// ===== END VEHICLE & FARE DATA ROUTES =====
 
 // Get all announcements (for testing) - MOVED TO END to avoid route conflicts
 router.get('/announcements', async (req, res) => {
