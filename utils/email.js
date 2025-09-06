@@ -496,105 +496,291 @@ const sendPDFEmail = async ({
       }
     });
 
-    // Header with company branding
-    doc.rect(0, 0, 612, 80).fill('#1e40af'); // Blue header background
+    // Header Section
+    doc.rect(0, 0, 612, 60).fill('#1e40af'); // Blue header background
+    
+    // EcBarko White Logo (placeholder - would need actual image)
     doc.fillColor('white')
-       .fontSize(24)
-       .font('Helvetica-Bold')
-       .text('ECBarko', 50, 25, { align: 'left' });
-    
-    doc.fontSize(16)
-       .text('E-Ticket', 50, 50, { align: 'left' });
-    
-    // Booking reference badge
-    doc.fillColor('#10b981') // Green badge
-       .rect(450, 20, 120, 25)
+       .rect(30, 15, 30, 30)
        .fill();
+    doc.fillColor('#1e40af')
+       .fontSize(8)
+       .text('ECB', 35, 25);
+    
+    // PPA Logo (placeholder - would need actual image)
     doc.fillColor('white')
-       .fontSize(10)
-       .text('BOOKING REF', 460, 28, { align: 'center' });
+       .rect(70, 15, 30, 30)
+       .fill();
+    doc.fillColor('#1e40af')
+       .fontSize(8)
+       .text('PPA', 75, 25);
+    
+    // EcBarko Text
+    doc.fillColor('white')
+       .fontSize(20)
+       .font('Helvetica-Bold')
+       .text('EcBarko', 110, 20);
+    
+    // Document title and date
+    doc.fontSize(16)
+       .font('Helvetica-Bold')
+       .text('eTicket Itinerary Receipt', 400, 15, { align: 'right' });
+    
+    // Format date properly
+    const currentDate = new Date();
+    const formattedDate = currentDate.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit'
+    }).toUpperCase();
+    
     doc.fontSize(12)
-       .text(bookingReference, 460, 35, { align: 'center' });
+       .font('Helvetica')
+       .text(formattedDate, 400, 35, { align: 'right' });
+    
+    doc.fontSize(10)
+       .text('For complete booking experience Call +63 2 528 7000', 400, 50, { align: 'right' });
 
     // Reset to black for content
     doc.fillColor('black');
     
     // Main content area
-    let yPosition = 100;
+    let yPosition = 80;
     
-    // Route information with enhanced styling
-    doc.fontSize(18)
+    // Company Information and Booking Details Row
+    // Company Information (Left Side)
+    doc.fontSize(12)
        .font('Helvetica-Bold')
-       .text('Route Information', 50, yPosition);
-    yPosition += 25;
+       .text('Address:', 30, yPosition);
+    yPosition += 15;
     
-    doc.fontSize(14)
+    doc.fontSize(10)
        .font('Helvetica')
-       .text(`${departureLocation}`, 50, yPosition);
-    yPosition += 20;
+       .text('Port Operations Building', 30, yPosition);
+    yPosition += 12;
+    doc.text('Barangay Talao-Talao, Port Area', 30, yPosition);
+    yPosition += 12;
+    doc.text('Lucena City, Quezon Province', 30, yPosition);
+    yPosition += 12;
+    doc.text('4301 Philippines', 30, yPosition);
+    yPosition += 15;
     
-    // Arrow with styling
-    doc.fontSize(16)
-       .text('➝', 50, yPosition);
-    yPosition += 20;
-    
-    doc.fontSize(14)
-       .text(`${arrivalLocation}`, 50, yPosition);
+    doc.text('TIN: 000-123-456-000000 VAT', 30, yPosition);
     yPosition += 30;
 
-    // Schedule details in a box
-    doc.rect(50, yPosition, 500, 80)
-       .stroke('#e5e7eb')
-       .fill('#f9fafb');
+    // Booking Details (Right Side)
+    let rightY = 80;
+    
+    // Left column of booking details
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .text('Booking Reference No.:', 350, rightY);
+    doc.fontSize(12)
+       .font('Helvetica-Bold')
+       .fillColor('#1e40af')
+       .text(bookingReference, 350, rightY + 12);
+    doc.fillColor('black');
+    rightY += 30;
+    
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .text('Departure:', 350, rightY);
+    
+    // Format departure date and time properly
+    const formattedDepartDate = new Date(departDate).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit'
+    }).toUpperCase();
+    
+    // Format time to 12-hour format
+    let formattedDepartTime = departTime;
+    if (!departTime.includes('AM') && !departTime.includes('PM')) {
+      const [hours, minutes] = departTime.split(':');
+      const hour24 = parseInt(hours);
+      const hour12 = hour24 === 0 ? 12 : (hour24 > 12 ? hour24 - 12 : hour24);
+      const period = hour24 >= 12 ? 'PM' : 'AM';
+      formattedDepartTime = `${hour12.toString().padStart(2, '0')}:${minutes} ${period}`;
+    }
+    
+    doc.fontSize(11)
+       .font('Helvetica')
+       .text(`${departureLocation} ${formattedDepartDate} | ${formattedDepartTime}`, 350, rightY + 12);
+    rightY += 25;
+    
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .text('Schedule No.:', 350, rightY);
+    doc.fontSize(11)
+       .font('Helvetica')
+       .text('SCHED#000', 350, rightY + 12);
+    rightY += 25;
+    
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .text('Contact Number:', 350, rightY);
+    doc.fontSize(11)
+       .font('Helvetica')
+       .text(passengers[0]?.contact || 'N/A', 350, rightY + 12);
+    rightY += 30;
+
+    // Right column of booking details
+    rightY = 80;
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .text('Shipping Line:', 500, rightY);
+    doc.fontSize(11)
+       .font('Helvetica')
+       .text(shippingLine, 500, rightY + 12);
+    rightY += 25;
+    
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .text('Destination:', 500, rightY);
+    doc.fontSize(11)
+       .font('Helvetica')
+       .text(arrivalLocation, 500, rightY + 12);
+    rightY += 25;
+    
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .text('Vehicles:', 500, rightY);
+    doc.fontSize(11)
+       .font('Helvetica')
+       .text(hasVehicle ? `${vehicleDetail.length} Vehicle(s)` : 'NONE', 500, rightY + 12);
+    rightY += 25;
+    
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .text('Email:', 500, rightY);
+    doc.fontSize(11)
+       .font('Helvetica')
+       .text('passenger@email.com', 500, rightY + 12);
+
+    yPosition = 200;
+
+    // Passenger and Fare Details Table
+    doc.fontSize(14)
+       .font('Helvetica-Bold')
+       .text('Passenger and Fare Details', 30, yPosition);
+    yPosition += 25;
+    
+    // Table Header
+    doc.rect(30, yPosition, 552, 20).fill('#e5e7eb').stroke('#9ca3af');
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .fillColor('black')
+       .text('Passenger Name', 40, yPosition + 6);
+    doc.text('Type', 350, yPosition + 6);
+    doc.text('Amount (PHP)', 450, yPosition + 6);
+    yPosition += 25;
+    
+    // Table Rows
+    passengers.forEach((passenger, index) => {
+      doc.rect(30, yPosition, 552, 20)
+         .stroke('#9ca3af')
+         .fill(index % 2 === 0 ? 'white' : '#f9fafb');
+      
+      doc.fontSize(10)
+         .font('Helvetica')
+         .fillColor('black')
+         .text(passenger.name || 'N/A', 40, yPosition + 6);
+      doc.text('Adult', 350, yPosition + 6);
+      doc.text(`₱${(totalFare / passengers.length).toFixed(2)}`, 450, yPosition + 6);
+      
+      yPosition += 25;
+    });
+    
+    // Total Row
+    doc.rect(30, yPosition, 552, 20).fill('#f3f4f6').stroke('#9ca3af');
+    doc.fontSize(10)
+       .font('Helvetica-Bold')
+       .fillColor('black')
+       .text('TOTAL PASSENGER FARE:', 40, yPosition + 6);
+    doc.text(`₱${totalFare.toFixed(2)}`, 450, yPosition + 6);
+    yPosition += 40;
+
+    // Summary of Charges
+    doc.fontSize(14)
+       .font('Helvetica-Bold')
+       .text('Summary of Charges', 30, yPosition);
+    yPosition += 25;
+    
+    doc.fontSize(11)
+       .font('Helvetica')
+       .text('Terminal Fee:', 30, yPosition);
+    doc.text('₱30.00', 500, yPosition, { align: 'right' });
+    yPosition += 15;
+    
+    doc.text('Vehicle Fee:', 30, yPosition);
+    doc.text(hasVehicle ? '₱625.73' : '₱0.00', 500, yPosition, { align: 'right' });
+    yPosition += 20;
+    
+    // Divider line
+    doc.moveTo(30, yPosition).lineTo(582, yPosition).stroke('#9ca3af');
     yPosition += 15;
     
     doc.fontSize(12)
        .font('Helvetica-Bold')
-       .text('Departure:', 60, yPosition);
-    doc.font('Helvetica')
-       .text(`${departDate} at ${departTime}`, 150, yPosition);
-    yPosition += 20;
-    
-    doc.font('Helvetica-Bold')
-       .text('Arrival:', 60, yPosition);
-    doc.font('Helvetica')
-       .text(`${arriveDate} at ${arriveTime}`, 150, yPosition);
-    yPosition += 20;
-    
-    doc.font('Helvetica-Bold')
-       .text('Shipping Line:', 60, yPosition);
-    doc.font('Helvetica')
-       .text(shippingLine, 150, yPosition);
-    yPosition += 20;
-    
-    doc.font('Helvetica-Bold')
-       .text('Card Type:', 60, yPosition);
-    doc.font('Helvetica')
-       .text(selectedCardType, 150, yPosition);
+       .text('TOTAL AMOUNT DUE:', 30, yPosition);
+    doc.text(`₱${(totalFare + 30.00 + (hasVehicle ? 625.73 : 0.00)).toFixed(2)}`, 500, yPosition, { align: 'right' });
     yPosition += 40;
 
-    // Passengers section
-    doc.fontSize(16)
+    // Reminders Box
+    doc.rect(30, yPosition, 552, 60).fill('#dbeafe').stroke('#3b82f6');
+    doc.fontSize(12)
        .font('Helvetica-Bold')
-       .text('Passenger Details', 50, yPosition);
-    yPosition += 25;
+       .fillColor('#1e40af')
+       .text('Reminders', 40, yPosition + 10);
     
-    passengers.forEach((p, index) => {
-      doc.rect(50, yPosition, 500, 30)
-         .stroke('#e5e7eb')
-         .fill(index % 2 === 0 ? '#f9fafb' : 'white');
-      
-      doc.fontSize(12)
-         .font('Helvetica-Bold')
-         .text(`Passenger ${index + 1}:`, 60, yPosition + 10);
-      doc.font('Helvetica')
-         .text(p.name, 150, yPosition + 10);
-      doc.text(`Contact: ${p.contact}`, 150, yPosition + 20);
-      
-      yPosition += 35;
-    });
+    doc.fontSize(10)
+       .font('Helvetica')
+       .fillColor('#1e40af')
+       .text('• Be in the terminal 4 hours prior to departure.', 40, yPosition + 25);
+    doc.text('• All passengers must present a valid identification at the terminal together with this eTicket Itinerary Receipt.', 40, yPosition + 37);
+    doc.text('• Tickets cannot be changed for refunded and/or revalidated tickets after vessel departure.', 40, yPosition + 49);
+    yPosition += 80;
 
-    // Vehicle details section
+    // Terms and Conditions
+    doc.fontSize(12)
+       .font('Helvetica-Bold')
+       .fillColor('black')
+       .text('Terms and Conditions', 30, yPosition);
+    yPosition += 20;
+    
+    doc.fontSize(9)
+       .font('Helvetica')
+       .text('• Non-transferable ticket valid only for named passengers and specified schedule.', 30, yPosition);
+    yPosition += 12;
+    doc.text('• Check-in 4 hours before departure with valid ID.', 30, yPosition);
+    yPosition += 12;
+    doc.text('• No refunds for no-shows or after departure.', 30, yPosition);
+    yPosition += 12;
+    doc.text('• Cancellations require 24-hour notice.', 30, yPosition);
+    yPosition += 12;
+    doc.text('• EcBarko not liable for personal belongings, delays, or weather-related changes.', 30, yPosition);
+    yPosition += 12;
+    doc.text('• Passengers must comply with safety regulations.', 30, yPosition);
+    yPosition += 12;
+    doc.text('• By purchasing, you agree to all terms under Philippine maritime law.', 30, yPosition);
+    yPosition += 30;
+
+    // Footer
+    doc.fontSize(9)
+       .font('Helvetica')
+       .text('This e-ticket serves as proof of purchase and booking confirmation.', 30, yPosition);
+    yPosition += 12;
+    doc.text('Please retain this document for your records and present it at the terminal for boarding.', 30, yPosition);
+    yPosition += 12;
+    doc.text('For inquiries, contact EcBarko customer service at +63 2 528 7000 or visit our office at Port Operations Building, Barangay Talao-Talao, Port Area, Lucena City, Quezon Province.', 30, yPosition);
+    yPosition += 30;
+    
+    doc.fontSize(11)
+       .font('Helvetica-Bold')
+       .fillColor('#1e40af')
+       .text('Thank you for choosing EcBarko. Safe travels!', 30, yPosition, { align: 'center' });
+
+    // Vehicle details section (if needed)
     if (hasVehicle && Array.isArray(vehicleDetail)) {
       yPosition += 10;
       doc.fontSize(16)
