@@ -14,6 +14,7 @@ const ActiveBookingSchema = new mongoose.Schema({
   vehicleType: { type: String, default: '' },
   status: { type: String, default: 'active' },
   shippingLine: { type: String, required: true },
+  schedcde: { type: String, default: '' }, // Add schedule code
   departurePort: { type: String, required: true },
   arrivalPort: { type: String, required: true },
   payment: { type: Number, required: true },
